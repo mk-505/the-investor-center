@@ -1,94 +1,101 @@
-# 📈 Investor Center
+# 🤖 Simulated Ball-Chasing Differential Drive Robot (ROS)
 
-Investor Center is a full-stack web application that empowers users with real-time stock prediction insights and financial guidance using deep learning models and a GPT-powered chatbot. Combining modern web technologies with cutting-edge machine learning, this platform aims to enhance investor decision-making with a responsive interface and smart backend processing.
+This project demonstrates a simulated differential drive robot in a custom Gazebo world that autonomously chases a ball using camera input. It combines robotics simulation, machine learning-based computer vision, and service-based control using **ROS (Robot Operating System)**.
 
-## 🚀 Features
+## 📦 ROS Packages
 
-- **Modern Frontend**: Built with React and styled using Tailwind CSS for a sleek, responsive design.
-- **Robust Backend**: Flask server that handles data processing, model inference, and API communication.
-- **Stock Prediction Models**:
-  - Long Short-Term Memory (LSTM) model with 80% accuracy
-  - Bi-directional LSTM model with 76% accuracy
-- **NY Stock Exchange Data**: Time series models are trained using real-world NYSE data.
-- **GPT-3.5 Chatbot**: Integrated via Hugging Face to answer company-specific financial queries and provide real-time insights.
-- **Visualization**: Predicted stock trends are displayed through dynamic graphs.
-  
-## 🧠 AI Models
+The project consists of two core ROS packages:
 
-- `lstm_model.weights.h5`  
-- `bi_stacked_concat_model.weights.h5`
+### 1. `my_robot`
 
-These models are trained to forecast future stock price movements based on historical stock data.
+- Defines the **URDF model** of the differential drive robot.
+- Sets up a **custom Gazebo world** that includes:
+  - Realistic environment
+  - The robot and the ball
+- Integrates:
+  - Gazebo plugins for differential drive and camera
+  - RViz for robot and sensor visualization
 
-## 🗃️ Folder Structure
+### 2. `ball_chaser`
+
+- Implements the robot behavior logic:
+  - `drive_bot`: ROS node exposing a `command_robot` service that sets robot velocity.
+  - `process_image`: Subscribes to the robot's camera image stream, runs a **YOLOv5 deep learning model** to detect the ball, and requests the appropriate velocity command from `command_robot`.
+
+## 🧠 System Architecture
 
 ```
-investor-center/
-│
-├── __pycache__/                  # Compiled Python files
-├── images/                      # Static image assets
-├── new_york_stock_exchange/    # Contains NYSE dataset files and utilities
-├── App.js                       # Main React component
-├── App.css / index.css          # Styling
-├── app.py                       # Flask backend entry point
-├── stock_prediction_model.py    # Model loading & inference logic
-├── predicted_stock_graph.png    # Example prediction output
-├── *.weights.h5                 # Saved deep learning models
-├── *.test.js / setupTests.js    # Test files
-└── reportWebVitals.js           # React performance monitoring
+[ Camera Image Stream ] ---> [ process_image Node (YOLOv5) ]
+                                   |
+                                   v
+                            [ command_robot Service ]
+                                   |
+                                   v
+                            [ drive_bot Node ] ---> [ /cmd_vel ]
 ```
 
-## 🧪 Getting Started
+## 🛠 Technologies Used
 
-### 1. Clone the Repository
+- **ROS Noetic** (or ROS1)
+- **Gazebo** for physics-based simulation
+- **URDF** for robot modeling
+- **RViz** for sensor and robot visualization
+- **PyTorch + OpenCV** for real-time image inference
+- **TorchScript YOLOv5 model** for ball detection
+- **ROS Services & Nodes** for modular control
+
+## 🚀 How to Launch
+
+1. **Clone the repository** into your ROS workspace:
 
 ```bash
-git clone https://github.com/yourusername/investor-center.git
-cd investor-center
+cd ~/catkin_ws/src
+git clone https://github.com/yourusername/ball-chasing-robot.git
+cd ~/catkin_ws && catkin_make
+source devel/setup.bash
 ```
 
-### 2. Install Frontend Dependencies
+2. **Launch the simulation**:
 
 ```bash
-cd frontend  # if React app is in a separate folder
-npm install
-npm start
+roslaunch my_robot world.launch
 ```
 
-### 3. Set Up the Flask Backend
+3. **Launch the ball chaser**:
 
 ```bash
-pip install -r requirements.txt
-python app.py
+roslaunch ball_chaser ball_chaser.launch
 ```
 
-Make sure to place your model `.h5` files in the correct directory.
+The robot will start detecting and moving toward the ball using its onboard camera and YOLOv5 object detection.
 
-## 📊 Example Output
+> ⚠️ Note: Ensure your trained YOLOv5 model is saved as a TorchScript `.pt` file and the correct path is provided in `process_image.cpp`.
 
-![Prediction Graph](./predicted_stock_graph.png)
+## 🔍 Visualization
 
-## 🤖 Chatbot Demo
+- **RViz** is included to visualize:
+  - Robot's camera sensor
+  - Joint states and transforms
+  - World geometry
 
-Ask questions like:
-> "What is the future outlook of AAPL?"  
-> "Show me the latest news on Tesla."
+## 🏗 Robot Design
 
-Responses are powered by GPT-3.5 through Hugging Face.
+- **Differential Drive** using Gazebo plugin
+- **Camera Sensor** for visual input
+- **URDF Modeling** includes:
+  - Links and joints
+  - Inertial and visual elements
+  - Sensor mounting
 
-## 📚 Tech Stack
+## 🎯 Ball Detection Logic (YOLOv5 Upgrade)
 
-- **Frontend**: React, Tailwind CSS
-- **Backend**: Flask
-- **ML**: TensorFlow/Keras (LSTM, Bi-LSTM), GPT-3.5 via Hugging Face
-- **Visualization**: Matplotlib / Plotly
-
-## 🙌 Acknowledgments
-
-- Hugging Face for GPT-3.5 integration
-- NYSE data from Kaggle or other public datasets
+- The `process_image` node runs a deep learning object detector (YOLOv5) on the image feed.
+- The ball is identified based on bounding box center position:
+  - If left of center → turn left
+  - If center → move forward
+  - If right → turn right
+- No white pixel logic — now robust to lighting, size, and color variations
 
 ## 📬 Contact
 
-Built with 💼 by Manroop Kalsi & Shaun Arulanandam.
-
+Built with 🛠 and ❤️ by Manroop Kalsi
